@@ -5,6 +5,9 @@ export default defineConfig({
   description: "Next.js入門のための演習教材",
   base: '/next-app-task-manager/',
   lang: 'ja-JP',
+  ignoreDeadLinks: [
+    /localhost/  // 教材内のlocalhostリンクはチェック対象外
+  ],
   themeConfig: {
     nav: [
       { text: 'ホーム', link: '/' },
