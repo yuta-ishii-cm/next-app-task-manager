@@ -32,7 +32,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/your-username/your-repo' }
+      { icon: 'github', link: 'https://github.com/yuta-ishii-cm/next-app-task-manager' }
     ]
   }
 })

@@ -11,7 +11,7 @@ hero:
       link: /phase1
     - theme: alt
       text: GitHub
-      link: https://github.com/your-username/your-repo
+      link: https://github.com/yuta-ishii-cm/next-app-task-manager
 
 features:
   - title: Phase 1 - 基礎編
