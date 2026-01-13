@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Next.js入門ドキュメント",
   description: "Next.js入門のための演習教材",
+  base: '/next-app-task-manager/',
   lang: 'ja-JP',
   themeConfig: {
     nav: [

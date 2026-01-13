@@ -1,0 +1,81 @@
+# ワークフロー名（GitHub Actionsの画面に表示される）
+name: Deploy VitePress site to Pages
+
+# ワークフローの実行トリガー
+on:
+  push:
+    branches: [main]  # mainブランチへのプッシュで自動実行
+  workflow_dispatch:  # GitHub画面から手動実行も可能
+
+# ワークフローに付与する権限
+permissions:
+  contents: read      # リポジトリの読み取り権限
+  pages: write        # GitHub Pagesへの書き込み権限
+  id-token: write     # OIDCトークンの発行権限（Pages認証に必要）
+
+# 同時実行の制御
+concurrency:
+  group: pages                 # 同じグループのワークフローは同時実行しない
+  cancel-in-progress: false    # 実行中のワークフローはキャンセルしない
+
+jobs:
+  # ========================================
+  # ビルドジョブ: サイトをビルドしてアーティファクトを作成
+  # ========================================
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # リポジトリのコードをチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴を取得（lastUpdatedの表示に必要）
+
+      # pnpmのセットアップ
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      # Node.jsのセットアップ（pnpmキャッシュも有効化）
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: practice/pnpm-lock.yaml
+
+      # GitHub Pagesの設定を取得
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # 依存パッケージのインストール
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: practice
+
+      # VitePressでサイトをビルド（.vitepress/distに出力）
+      - name: Build with VitePress
+        run: pnpm doc:build
+        working-directory: practice
+
+      # ビルド成果物をアーティファクトとしてアップロード
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: practice/.vitepress/dist  # ビルド出力ディレクトリ
+
+  # ========================================
+  # デプロイジョブ: ビルド成果物をGitHub Pagesに公開
+  # ========================================
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}  # デプロイ先URL
+    needs: build           # buildジョブの完了を待つ
+    runs-on: ubuntu-latest
+    steps:
+      # GitHub Pagesにデプロイ
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
