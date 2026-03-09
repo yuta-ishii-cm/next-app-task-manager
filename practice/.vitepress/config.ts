@@ -1,6 +1,15 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 
-export default defineConfig({
+export default withMermaid(defineConfig({
+  vite: {
+    optimizeDeps: {
+      include: ['mermaid', 'dayjs']
+    },
+    ssr: {
+      noExternal: ['mermaid']
+    }
+  },
   title: "Next.js入門ドキュメント",
   description: "Next.js入門のための演習教材",
   base: '/next-app-task-manager/',
@@ -35,4 +44,4 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/yuta-ishii-cm/next-app-task-manager' }
     ]
   }
-})
+}))
