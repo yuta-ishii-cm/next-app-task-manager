@@ -284,6 +284,42 @@ flowchart TB
 
 ### コード例
 
+`app/layout.tsx` を編集してヘッダーを追加します。以下のポイントを押さえましょう。
+
+**ポイント 1: metadata でページ情報を設定**
+
+```tsx
+export const metadata: Metadata = {
+  title: "Task Manager",
+  description: "Jira風タスク管理ツール",
+};
+```
+
+- ブラウザのタブに表示されるタイトル
+- SEO対策にも使用
+
+**ポイント 2: {children} で各ページを埋め込む**
+
+```tsx
+<body className="bg-gray-50">
+  <header>...</header>
+  {children}  {/* ← ここに各ページのコンテンツが入る */}
+</body>
+```
+
+**ポイント 3: 共通ヘッダーを追加**
+
+```tsx
+<header className="bg-white shadow-sm border-b">
+  <div className="max-w-7xl mx-auto px-4 py-4">
+    <a href="/" className="text-xl font-bold text-gray-800">
+      Task Manager
+    </a>
+  </div>
+</header>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: app/layout.tsx
 
@@ -316,11 +352,10 @@ export default function RootLayout({
   );
 }
 ```
+:::
 
 ### ポイント解説
 
-- **`{children}`**: 各ページのコンテンツがここに挿入される
-- **`metadata`**: ページのタイトルや説明を設定（SEO対策）
 - **ネストされたレイアウト**: `app/tasks/layout.tsx`を作ると、タスクページ専用のレイアウトも追加可能
 
 ### つまずきポイント
@@ -410,6 +445,29 @@ export default function TasksPage() {
 
 ### コード例: Client Component
 
+`components/Counter.tsx` を新規作成します。Client Component の特徴を体験するためのサンプルです。
+
+**ポイント 1: "use client" を宣言**
+
+```tsx
+"use client";  // ← ファイルの先頭に必須
+```
+
+**ポイント 2: useState でクライアント側の状態を管理**
+
+```tsx
+const [count, setCount] = useState(0);
+```
+
+**ポイント 3: onClick でユーザー操作を処理**
+
+```tsx
+<button onClick={() => setCount(count + 1)}>
+  +1
+</button>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/Counter.tsx
 "use client";
@@ -435,6 +493,7 @@ export default function Counter() {
   );
 }
 ```
+:::
 
 ### コンポーネントの組み合わせ
 

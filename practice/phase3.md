@@ -62,6 +62,53 @@ Client Componentでフォームを作成し、useStateで入力値を管理し�
 
 ### コード例
 
+`components/AddTaskForm.tsx` を新規作成します。以下のポイントを押さえて実装しましょう。
+
+**ポイント 1: Client Component として宣言**
+
+インタラクティブな機能（useState, onClick）を使うため、`"use client"` が必要です。
+
+```tsx
+"use client";
+```
+
+**ポイント 2: Props で親コンポーネントにデータを渡す**
+
+```tsx
+type Props = {
+  onAddTask: (task: Omit<Task, "id" | "createdAt">) => void;
+};
+```
+
+- `Omit<Task, "id" | "createdAt">`: Task型から `id` と `createdAt` を除いた型
+- `id` と `createdAt` は親コンポーネント側で生成するため、フォームからは渡さない
+
+**ポイント 3: useState でフォームの状態を管理**
+
+```tsx
+const [isOpen, setIsOpen] = useState(false);    // モーダルの開閉
+const [title, setTitle] = useState("");          // タイトル入力
+const [description, setDescription] = useState(""); // 説明入力
+const [status, setStatus] = useState<Status>("TODO"); // ステータス選択
+```
+
+**ポイント 4: handleSubmit でフォーム送信を処理**
+
+```tsx
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();  // ページリロードを防止
+
+  onAddTask({ title, description, status });  // 親に渡す
+
+  // フォームをリセット
+  setTitle("");
+  setDescription("");
+  setStatus("TODO");
+  setIsOpen(false);
+};
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/AddTaskForm.tsx
 "use client";
@@ -176,6 +223,7 @@ export default function AddTaskForm({ onAddTask }: Props) {
   );
 }
 ```
+:::
 
 ### ポイント解説
 
@@ -267,6 +315,54 @@ flowchart TB
 
 ### コード例
 
+`components/TaskBoardClient.tsx` を新規作成します。以下のポイントを押さえて実装しましょう。
+
+**ポイント 1: Server Component から初期データを受け取る**
+
+```tsx
+type Props = {
+  initialTasks: Task[];
+};
+
+export default function TaskBoardClient({ initialTasks }: Props) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+```
+
+- サーバー側で取得したデータを `initialTasks` として受け取る
+- `useState` の初期値として設定
+
+**ポイント 2: addTask 関数でタスクを追加**
+
+```tsx
+const addTask = (newTask: Omit<Task, "id" | "createdAt">) => {
+  const task: Task = {
+    ...newTask,
+    id: crypto.randomUUID(),  // ブラウザで一意のIDを生成
+    createdAt: new Date(),
+  };
+  setTasks((prev) => [...prev, task]);
+};
+```
+
+- `crypto.randomUUID()`: ブラウザAPIでユニークなIDを生成
+- `setTasks((prev) => ...)`: 前の状態を元に新しい配列を作成（推奨パターン）
+
+**ポイント 3: deleteTask 関数でタスクを削除**
+
+```tsx
+const deleteTask = (taskId: string) => {
+  setTasks((prev) => prev.filter((task) => task.id !== taskId));
+};
+```
+
+**ポイント 4: 子コンポーネントにコールバックを渡す**
+
+```tsx
+<AddTaskForm onAddTask={addTask} />
+<TaskBoard tasks={tasks} onDeleteTask={deleteTask} />
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/TaskBoardClient.tsx
 "use client";
@@ -307,12 +403,7 @@ export default function TaskBoardClient({ initialTasks }: Props) {
   );
 }
 ```
-
-### ポイント解説
-
-- **`initialTasks`**: サーバーから受け取る初期データ
-- **`crypto.randomUUID()`**: ブラウザで一意のIDを生成
-- **`setTasks((prev) => ...)`**: 前の状態を元に新しい状態を計算（推奨パターン）
+:::
 
 ### つまずきポイント
 
@@ -338,6 +429,30 @@ export default function TaskBoardClient({ initialTasks }: Props) {
 
 ### コード例: TaskBoard.tsx
 
+Phase 2 で作成した `TaskBoard.tsx` に、削除用のコールバックを追加します。
+
+**変更箇所:**
+
+```tsx
+// Props に onDeleteTask を追加
+type Props = {
+  tasks: Task[];
+  onDeleteTask?: (taskId: string) => void;  // [!code ++]
+};
+
+// 関数の引数に onDeleteTask を追加
+export default function TaskBoard({ tasks, onDeleteTask }: Props) {  // [!code focus]
+
+// StatusColumn に onDeleteTask を渡す
+<StatusColumn
+  key={status}
+  status={status}
+  tasks={tasks.filter((task) => task.status === status)}
+  onDeleteTask={onDeleteTask}  // [!code ++]
+/>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/TaskBoard.tsx
 
@@ -366,9 +481,34 @@ export default function TaskBoard({ tasks, onDeleteTask }: Props) {
   );
 }
 ```
+:::
 
 ### コード例: StatusColumn.tsx
 
+Phase 2 で作成した `StatusColumn.tsx` に、削除用のコールバックを追加します。
+
+**変更箇所:**
+
+```tsx
+// Props に onDeleteTask を追加
+type Props = {
+  status: Status;
+  tasks: Task[];
+  onDeleteTask?: (taskId: string) => void;  // [!code ++]
+};
+
+// 関数の引数に onDeleteTask を追加
+export default function StatusColumn({ status, tasks, onDeleteTask }: Props) {  // [!code focus]
+
+// TaskCard に onDelete を渡す
+<TaskCard
+  key={task.id}
+  task={task}
+  onDelete={onDeleteTask}  // [!code ++]
+/>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/StatusColumn.tsx
 
@@ -427,9 +567,59 @@ export default function StatusColumn({ status, tasks, onDeleteTask }: Props) {
   );
 }
 ```
+:::
 
 ### コード例: TaskCard.tsx
 
+Phase 2 で作成した `TaskCard.tsx` に、削除ボタンを追加します。変更箇所が多いので、順番に見ていきましょう。
+
+**変更箇所 1: Props に onDelete を追加**
+
+```tsx
+type Props = {
+  task: Task;
+  onDelete?: (taskId: string) => void;  // [!code ++]
+};
+
+export default function TaskCard({ task, onDelete }: Props) {  // [!code focus]
+```
+
+**変更箇所 2: group クラスを追加**
+
+ホバー時に削除ボタンを表示するため、親要素に `group` クラスを追加します。
+
+```tsx
+// before
+<div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+
+// after（group を追加）
+<div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">  // [!code focus]
+```
+
+**変更箇所 3: 削除ボタンを追加**
+
+タイトル部分のレイアウトを変更し、削除ボタンを追加します。
+
+```tsx
+// before: タイトル部分
+<h3 className="font-medium text-gray-800">{task.title}</h3>
+
+// after: flex レイアウトに変更し、削除ボタンを追加
+<div className="flex items-start justify-between">
+  <h3 className="font-medium text-gray-800 flex-1">{task.title}</h3>
+  {onDelete && (
+    <button
+      onClick={() => onDelete(task.id)}
+      className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+      title="削除"
+    >
+      {/* SVGアイコン（ゴミ箱） */}
+    </button>
+  )}
+</div>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/TaskCard.tsx
 
@@ -476,6 +666,7 @@ export default function TaskCard({ task, onDelete }: Props) {
   );
 }
 ```
+:::
 
 ### ポイント解説
 
@@ -515,6 +706,30 @@ Server ComponentとClient Componentを組み合わせます。
 
 ### コード例
 
+Phase 2 で作成した `app/tasks/page.tsx` を更新します。`TaskBoard` の代わりに `TaskBoardClient` を使用するように変更します。
+
+**変更箇所:**
+
+```tsx
+// before (Phase 2)
+import TaskBoard from "@/components/TaskBoard";
+import { mockTasks } from "@/lib/mock-data";
+
+// after (Phase 3)
+import TaskBoardClient from "@/components/TaskBoardClient";  // [!code focus]
+import { mockTasks } from "@/lib/mock-data";
+
+// JSX部分も変更
+// before
+<TaskBoard tasks={mockTasks} />
+
+// after
+<TaskBoardClient initialTasks={mockTasks} />  // [!code focus]
+```
+
+- ヘッダー部分（h1 と「新規タスク」ボタン）は `TaskBoardClient` 内に移動したため、page.tsx からは削除します
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: app/tasks/page.tsx
 
@@ -531,6 +746,7 @@ export default function TasksPage() {
   );
 }
 ```
+:::
 
 ### ポイント解説
 

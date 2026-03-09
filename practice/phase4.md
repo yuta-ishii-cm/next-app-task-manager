@@ -417,6 +417,32 @@ flowchart LR
 
 ### コード例: app/tasks/page.tsx
 
+Phase 3 で作成した `app/tasks/page.tsx` を更新します。モックデータの代わりにDBからデータを取得するように変更します。
+
+**変更箇所:**
+
+```tsx
+// before (Phase 3): モックデータをインポート
+import { mockTasks } from "@/lib/mock-data";
+
+// after (Phase 4): Server Action をインポート
+import { getTasks } from "@/lib/actions";  // [!code focus]
+
+// before (Phase 3): 同期関数
+export default function TasksPage() {
+
+// after (Phase 4): async 関数に変更し、データを取得
+export default async function TasksPage() {  // [!code focus]
+  const tasks = await getTasks();  // [!code ++]
+
+// before (Phase 3)
+<TaskBoardClient initialTasks={mockTasks} />
+
+// after (Phase 4)
+<TaskBoardClient initialTasks={tasks} />  // [!code focus]
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: app/tasks/page.tsx
 
@@ -435,9 +461,91 @@ export default async function TasksPage() {
   );
 }
 ```
+:::
 
 ### コード例: components/AddTaskForm.tsx
 
+Phase 3 で作成した `AddTaskForm.tsx` を Server Actions 対応に更新します。主な変更点は以下の通りです。
+
+**変更箇所 1: インポートとProps**
+
+```tsx
+// before (Phase 3): 親からコールバックを受け取る
+import { Task, Status } from "@/types/task";
+
+type Props = {
+  onAddTask: (task: Omit<Task, "id" | "createdAt">) => void;
+};
+
+export default function AddTaskForm({ onAddTask }: Props) {
+
+// after (Phase 4): Server Action を直接呼び出す（Propsなし）
+import { useRouter } from "next/navigation";  // [!code ++]
+import { Status } from "@/types/task";
+import { createTask } from "@/lib/actions";  // [!code ++]
+
+export default function AddTaskForm() {  // [!code focus]
+  const router = useRouter();  // [!code ++]
+```
+
+**変更箇所 2: 状態管理の簡略化**
+
+```tsx
+// before (Phase 3): 各入力フィールドを useState で管理
+const [title, setTitle] = useState("");
+const [description, setDescription] = useState("");
+const [status, setStatus] = useState<Status>("TODO");
+
+// after (Phase 4): isOpen と isLoading のみ
+const [isOpen, setIsOpen] = useState(false);
+const [isLoading, setIsLoading] = useState(false);  // [!code ++]
+```
+
+**変更箇所 3: handleSubmit**
+
+```tsx
+// before (Phase 3): 親のコールバックを呼ぶ
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  onAddTask({ title, description, status });
+  // リセット処理...
+};
+
+// after (Phase 4): Server Action を直接呼ぶ
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {  // [!code focus]
+  e.preventDefault();
+  setIsLoading(true);
+
+  try {
+    const formData = new FormData(e.currentTarget);  // [!code ++]
+    await createTask(formData);  // [!code ++]
+    setIsOpen(false);
+    router.refresh();  // [!code ++]
+  } catch (error) {
+    alert("タスクの作成に失敗しました");
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+**変更箇所 4: フォーム入力**
+
+```tsx
+// before (Phase 3): value と onChange で制御
+<input
+  value={title}
+  onChange={(e) => setTitle(e.target.value)}
+/>
+
+// after (Phase 4): name 属性で FormData から取得
+<input
+  name="title"  // [!code focus]
+  required
+/>
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/AddTaskForm.tsx
 "use client";
@@ -546,9 +654,72 @@ export default function AddTaskForm() {
   );
 }
 ```
+:::
 
 ### コード例: components/TaskBoardClient.tsx
 
+Phase 3 で作成した `TaskBoardClient.tsx` を Server Actions 対応に更新します。`useState` でのローカル状態管理を削除し、Server Actions を直接呼び出す形に変更します。
+
+**変更箇所 1: インポート**
+
+```tsx
+// before (Phase 3): useState でローカル状態管理
+import { useState } from "react";
+import { Task } from "@/types/task";
+
+// after (Phase 4): Server Action を使用
+import { useRouter } from "next/navigation";  // [!code ++]
+import { Task } from "@/types/task";
+import { deleteTask } from "@/lib/actions";  // [!code ++]
+```
+
+**変更箇所 2: 状態管理を削除**
+
+```tsx
+// before (Phase 3): useState でタスクを管理
+const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
+const addTask = (newTask: Omit<Task, "id" | "createdAt">) => {
+  const task: Task = {
+    ...newTask,
+    id: crypto.randomUUID(),
+    createdAt: new Date(),
+  };
+  setTasks((prev) => [...prev, task]);
+};
+
+const deleteTask = (taskId: string) => {
+  setTasks((prev) => prev.filter((task) => task.id !== taskId));
+};
+
+// after (Phase 4): Server Action を直接呼ぶ
+const router = useRouter();
+
+const handleDeleteTask = async (taskId: string) => {  // [!code focus]
+  if (!confirm("このタスクを削除しますか？")) {
+    return;
+  }
+
+  try {
+    await deleteTask(taskId);  // Server Action を呼ぶ
+    router.refresh();  // サーバーからデータを再取得  // [!code ++]
+  } catch (error) {
+    alert("タスクの削除に失敗しました");
+  }
+};
+```
+
+**変更箇所 3: AddTaskForm の Props を削除**
+
+```tsx
+// before (Phase 3): コールバックを渡す
+<AddTaskForm onAddTask={addTask} />
+
+// after (Phase 4): Props なし（AddTaskForm が自分で Server Action を呼ぶ）
+<AddTaskForm />  // [!code focus]
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/TaskBoardClient.tsx
 "use client";
@@ -591,6 +762,7 @@ export default function TaskBoardClient({ initialTasks }: Props) {
   );
 }
 ```
+:::
 
 ### ポイント解説
 
@@ -651,6 +823,34 @@ PrismaとTypeScriptの型を整合させます。
 
 ### コード例
 
+Phase 2 で作成した `types/task.ts` を Prisma の型を使用するように更新します。
+
+**変更箇所:**
+
+```tsx
+// before (Phase 2): 手動で型定義
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: Status;
+  createdAt: Date;
+};
+
+// after (Phase 4): Prisma の型を使用
+import { Task as PrismaTask } from "@prisma/client";  // [!code ++]
+
+export type Task = PrismaTask;  // [!code focus]
+
+// 新規作成時の型も追加（任意）
+export type CreateTaskInput = {  // [!code ++]
+  title: string;
+  description?: string;
+  status?: Status;
+};
+```
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: types/task.ts
 
@@ -668,11 +868,13 @@ export type CreateTaskInput = {
   status?: Status;
 };
 ```
+:::
 
 ### ポイント解説
 
 - **Prismaの型**: `@prisma/client`から自動生成される型を使用
 - **型の一貫性**: アプリ全体で同じ型定義を使用
+- **`updatedAt`の追加**: Prismaのスキーマで定義した `updatedAt` フィールドも型に含まれる
 
 ---
 

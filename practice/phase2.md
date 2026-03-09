@@ -58,22 +58,6 @@ TypeScriptで型を定義し、コード全体で再利用します。
 - [ ] `types/`ディレクトリを作成
 - [ ] `types/task.ts`を作成
 
-### コード例
-
-```tsx
-// ファイルパス: types/task.ts
-
-export type Status = "TODO" | "IN_PROGRESS" | "DONE";
-
-export type Task = {
-  id: string;
-  title: string;
-  description: string;
-  status: Status;
-  createdAt: Date;
-};
-```
-
 ### ポイント解説
 
 ```mermaid
@@ -95,9 +79,41 @@ flowchart LR
     style Usage fill:#d1fae5,stroke:#10b981
 ```
 
-- **Union Type（`|`）**: `Status`は3つの値のいずれか
-- **型エクスポート**: `export type`で他のファイルから使用可能に
-- **型の再利用**: 1箇所で定義して複数箇所で使用
+**ポイント 1:** Union Type（`|`）で `Status` を3つの値のいずれかに限定
+
+```tsx
+export type Status = "TODO" | "IN_PROGRESS" | "DONE";
+```
+
+**ポイント 2:** `Task` 型でタスクの構造を定義
+
+```tsx
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: Status;  // 上で定義したStatus型を使用
+  createdAt: Date;
+};
+```
+
+**ポイント 3:** `export type` で他のファイルから使用可能に
+
+::: details 完全なコード（クリックで展開）
+```tsx
+// ファイルパス: types/task.ts
+
+export type Status = "TODO" | "IN_PROGRESS" | "DONE";
+
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: Status;
+  createdAt: Date;
+};
+```
+:::
 
 ### つまずきポイント
 
@@ -124,8 +140,32 @@ flowchart LR
 - [ ] `lib/`ディレクトリを作成
 - [ ] `lib/mock-data.ts`を作成
 
-### コード例
+### ポイント解説
 
+**ポイント 1:** 定義した `Task` 型をインポートして使用
+
+```tsx
+import { Task } from "@/types/task";
+```
+
+**ポイント 2:** `Task[]` で配列の各要素が `Task` 型であることを保証
+
+```tsx
+export const mockTasks: Task[] = [
+  {
+    id: "1",
+    title: "Next.jsプロジェクトのセットアップ",
+    // ... Task型に沿った構造
+  },
+  // ...
+];
+```
+
+**ポイント 3:** モックデータの利点
+- DBなしで開発を進められる
+- 各ステータス（TODO, IN_PROGRESS, DONE）のタスクを用意しておくとUIの確認がしやすい
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: lib/mock-data.ts
 
@@ -169,11 +209,7 @@ export const mockTasks: Task[] = [
   },
 ];
 ```
-
-### ポイント解説
-
-- **型の適用**: `Task[]`で配列の各要素が`Task`型であることを保証
-- **モックデータの利点**: DBなしで開発を進められる
+:::
 
 ### 動作確認
 
@@ -192,8 +228,53 @@ export const mockTasks: Task[] = [
 - [ ] `components/`ディレクトリを作成（まだの場合）
 - [ ] `components/TaskCard.tsx`を作成
 
-### コード例
+### ポイント解説
 
+```mermaid
+flowchart TB
+    subgraph Props["Props（親から受け取る）"]
+        task["task: Task"]
+    end
+
+    subgraph Component["TaskCard"]
+        title["task.title"]
+        desc["task.description"]
+        date["task.createdAt"]
+    end
+
+    Props --> Component
+
+    style Props fill:#fef3c7,stroke:#f59e0b
+    style Component fill:#d1fae5,stroke:#10b981
+```
+
+**ポイント 1:** `Props` 型で親から受け取る値の型を定義
+
+```tsx
+type Props = {
+  task: Task;
+};
+```
+
+**ポイント 2:** 分割代入で `{ task }` を Props から取り出す
+
+```tsx
+export default function TaskCard({ task }: Props) {
+  // task.title, task.description などでアクセス
+}
+```
+
+**ポイント 3:** Tailwind CSS でスタイリング
+
+| クラス | 効果 |
+|--------|------|
+| `rounded-lg` | 角丸 |
+| `shadow-sm` | 小さい影 |
+| `hover:shadow-md` | ホバー時に影を大きく |
+| `transition-shadow` | 影の変化をアニメーション |
+| `line-clamp-2` | 2行で切り捨て |
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/TaskCard.tsx
 
@@ -217,35 +298,7 @@ export default function TaskCard({ task }: Props) {
   );
 }
 ```
-
-### ポイント解説
-
-```mermaid
-flowchart TB
-    subgraph Props["Props（親から受け取る）"]
-        task["task: Task"]
-    end
-
-    subgraph Component["TaskCard"]
-        title["task.title"]
-        desc["task.description"]
-        date["task.createdAt"]
-    end
-
-    Props --> Component
-
-    style Props fill:#fef3c7,stroke:#f59e0b
-    style Component fill:#d1fae5,stroke:#10b981
-```
-
-- **Props型定義**: `type Props = { task: Task }`で受け取る値の型を定義
-- **分割代入**: `{ task }`でPropsから`task`を取り出す
-- **Tailwind CSS**:
-  - `rounded-lg`: 角丸
-  - `shadow-sm`: 小さい影
-  - `hover:shadow-md`: ホバー時に影を大きく
-  - `transition-shadow`: 影の変化をアニメーション
-  - `line-clamp-2`: 2行で切り捨て
+:::
 
 ### つまずきポイント
 
@@ -277,8 +330,60 @@ flowchart TB
 
 - [ ] `components/StatusColumn.tsx`を作成
 
-### コード例
+### ポイント解説
 
+```mermaid
+flowchart TB
+    subgraph Config["statusConfig"]
+        TODO["TODO\n黄色系"]
+        IN_PROGRESS["IN_PROGRESS\n青色系"]
+        DONE["DONE\n緑色系"]
+    end
+
+    subgraph Column["StatusColumn"]
+        Header["ヘッダー\nラベル + タスク数"]
+        Cards["TaskCard × n"]
+    end
+
+    Config --> Column
+
+    style TODO fill:#fef3c7,stroke:#f59e0b
+    style IN_PROGRESS fill:#dbeafe,stroke:#3b82f6
+    style DONE fill:#d1fae5,stroke:#10b981
+```
+
+**ポイント 1:** 設定オブジェクトでステータスごとの色を管理
+
+```tsx
+const statusConfig = {
+  TODO: {
+    label: "TODO",
+    bgColor: "bg-amber-50",
+    // ...
+  },
+  IN_PROGRESS: { /* ... */ },
+  DONE: { /* ... */ },
+};
+```
+
+**ポイント 2:** テンプレートリテラルで動的にクラスを適用
+
+```tsx
+const config = statusConfig[status];
+<div className={`${config.bgColor} ${config.borderColor} ...`}>
+```
+
+**ポイント 3:** `.map()` で配列をループしてコンポーネントを生成
+
+```tsx
+{tasks.map((task) => (
+  <TaskCard key={task.id} task={task} />
+))}
+```
+
+**ポイント 4:** `key` 属性はReactがリストの各要素を識別するために必要
+
+::: details 完全なコード（クリックで展開）
 ```tsx
 // ファイルパス: components/StatusColumn.tsx
 
@@ -336,33 +441,7 @@ export default function StatusColumn({ status, tasks }: Props) {
   );
 }
 ```
-
-### ポイント解説
-
-```mermaid
-flowchart TB
-    subgraph Config["statusConfig"]
-        TODO["TODO\n黄色系"]
-        IN_PROGRESS["IN_PROGRESS\n青色系"]
-        DONE["DONE\n緑色系"]
-    end
-
-    subgraph Column["StatusColumn"]
-        Header["ヘッダー\nラベル + タスク数"]
-        Cards["TaskCard × n"]
-    end
-
-    Config --> Column
-
-    style TODO fill:#fef3c7,stroke:#f59e0b
-    style IN_PROGRESS fill:#dbeafe,stroke:#3b82f6
-    style DONE fill:#d1fae5,stroke:#10b981
-```
-
-- **設定オブジェクト**: `statusConfig`でステータスごとの色を管理
-- **動的クラス**: テンプレートリテラルで条件に応じたクラスを適用
-- **`.map()`**: 配列をループしてコンポーネントを生成
-- **`key`属性**: Reactがリストの各要素を識別するために必要
+:::
 
 ### つまずきポイント
 
@@ -387,35 +466,6 @@ flowchart TB
 ### やること
 
 - [ ] `components/TaskBoard.tsx`を作成
-
-### コード例
-
-```tsx
-// ファイルパス: components/TaskBoard.tsx
-
-import { Task, Status } from "@/types/task";
-import StatusColumn from "./StatusColumn";
-
-type Props = {
-  tasks: Task[];
-};
-
-const statuses: Status[] = ["TODO", "IN_PROGRESS", "DONE"];
-
-export default function TaskBoard({ tasks }: Props) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {statuses.map((status) => (
-        <StatusColumn
-          key={status}
-          status={status}
-          tasks={tasks.filter((task) => task.status === status)}
-        />
-      ))}
-    </div>
-  );
-}
-```
 
 ### ポイント解説
 
@@ -449,9 +499,48 @@ flowchart TB
     style col3 fill:#d1fae5,stroke:#10b981
 ```
 
-- **グリッドレイアウト**: `grid-cols-3`で3列に分割
-- **レスポンシブ**: `md:grid-cols-3`で中サイズ以上で3列、それ以下で1列
-- **`.filter()`**: ステータスでタスクを絞り込み
+**ポイント 1:** グリッドレイアウトで3列に分割
+
+```tsx
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+```
+
+**ポイント 2:** `md:grid-cols-3` でレスポンシブ対応（中サイズ以上で3列、それ以下で1列）
+
+**ポイント 3:** `.filter()` でステータスごとにタスクを絞り込み
+
+```tsx
+tasks={tasks.filter((task) => task.status === status)}
+```
+
+::: details 完全なコード（クリックで展開）
+```tsx
+// ファイルパス: components/TaskBoard.tsx
+
+import { Task, Status } from "@/types/task";
+import StatusColumn from "./StatusColumn";
+
+type Props = {
+  tasks: Task[];
+};
+
+const statuses: Status[] = ["TODO", "IN_PROGRESS", "DONE"];
+
+export default function TaskBoard({ tasks }: Props) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {statuses.map((status) => (
+        <StatusColumn
+          key={status}
+          status={status}
+          tasks={tasks.filter((task) => task.status === status)}
+        />
+      ))}
+    </div>
+  );
+}
+```
+:::
 
 ### つまずきポイント
 
@@ -477,13 +566,31 @@ flowchart TB
 
 - [ ] `app/tasks/page.tsx`を更新
 
-### コード例
+### 変更箇所
+
+Phase 1で作成したシンプルなページを、カンバンボードUIに更新します。
+
+**変更箇所 1:** インポートを追加
 
 ```tsx
-// ファイルパス: app/tasks/page.tsx
-
 import TaskBoard from "@/components/TaskBoard";
 import { mockTasks } from "@/lib/mock-data";
+```
+
+**変更箇所 2:** ページ全体を書き換え
+
+```tsx
+// Phase 1 のコード
+export default function TasksPage() {
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold">タスク一覧</h1>
+      <p className="mt-4 text-gray-600">ここにタスク一覧が表示されます</p>
+    </main>
+  );
+}
+
+// ↓ Phase 2 で更新
 
 export default function TasksPage() {
   return (
@@ -491,9 +598,7 @@ export default function TasksPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-800">タスク一覧</h1>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-            + 新規タスク
-          </button>
+          <button className="...">+ 新規タスク</button>
         </div>
         <TaskBoard tasks={mockTasks} />
       </div>
@@ -520,6 +625,31 @@ flowchart TB
 
 - **Server Component**: `"use client"`がないのでサーバーで実行
 - **データの流れ**: `mockTasks` → `TaskBoard` → `StatusColumn` → `TaskCard`
+
+::: details 完全なコード（クリックで展開）
+```tsx
+// ファイルパス: app/tasks/page.tsx
+
+import TaskBoard from "@/components/TaskBoard";
+import { mockTasks } from "@/lib/mock-data";
+
+export default function TasksPage() {
+  return (
+    <main className="min-h-screen p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">タスク一覧</h1>
+          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+            + 新規タスク
+          </button>
+        </div>
+        <TaskBoard tasks={mockTasks} />
+      </div>
+    </main>
+  );
+}
+```
+:::
 
 ### つまずきポイント
 
